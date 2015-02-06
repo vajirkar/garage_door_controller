@@ -25,7 +25,11 @@ def send_notification():
         notification_sent = True
         msg = "Garage door open since " + door_open_since.strftime("%-I:%M%P %B %d, %Y") + "."
         msg = msg + " Time now " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
-        send_email.send_email_notification(msg)
+	try:
+            send_email.send_email_notification(msg)
+        except:
+            ''' Ignore for now, re-notification will be sent '''
+            print "send_email error... will re-notify later."
         '''send_sms_notification()'''
         '''send_tweet_notification()'''
     elif datetime.now() - last_notification > timedelta(seconds=repeat_notification_secs):
@@ -33,7 +37,11 @@ def send_notification():
         print "Sending repeat notification ... %s." % last_notification
         msg = "Garage door open since " + door_open_since.strftime("%-I:%M%P %B %d, %Y") + "."
         msg = msg + " Time now " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
-        send_email.send_email_notification(msg)
+        try:
+            send_email.send_email_notification(msg)
+        except:
+            ''' Ignore for now, re-notification will be sent '''
+            print "send_email error, re-notification failed... will re-notify later."
         
 
 def print_door_state():
