@@ -4,6 +4,7 @@ from datetime import datetime
 from datetime import timedelta
 import time
 import send_email as send_email
+import gdc_logging as gdc_logging
 
 CLOSED = 0
 OPEN = 1
@@ -23,6 +24,13 @@ heartbeat_freq_hours = 24
 heartbeat_freq_hours_ = heartbeat_freq_hours
 heartbeat_reattempt_freq_hours = 1
 heartbeat_send_failures = 0
+uselogfile = True
+
+def logmsg(msg):
+    if uselogfile:
+        logger.info(msg)
+    else:
+        print(msg)
 
 def send_notification():
     global notification_sent
@@ -34,24 +42,26 @@ def send_notification():
         notification_sent = True
         msg = "Garage door open since " + door_open_since.strftime("%-I:%M%P %B %d, %Y") + "."
         msg = msg + " Time now " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
-	try:
-            print "Sending notification ... %s." % datetime.now()
+        try:
+            msg = "Sending notification ... " + datetime.now().strftime("%-I:%M%P %B %d, %Y")
+            logmsg(msg)
             send_email.send_email_notification(email_subject, msg)
         except:
             ''' Ignore for now, re-notification will be sent '''
-            print "send_email error... will re-notify later."
+            logmsg("send_email error... will re-notify later.")
         '''send_sms_notification()'''
         '''send_tweet_notification()'''
     elif datetime.now() - last_notification > timedelta(seconds=repeat_notification_secs):
         last_notification = datetime.now()
-        print "Sending repeat notification ... %s." % last_notification
+        msg = "Sending repeat notification ... " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
+        logmsg(msg)
         msg = "Garage door open since " + door_open_since.strftime("%-I:%M%P %B %d, %Y") + "."
         msg = msg + " Time now " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
         try:
             send_email.send_email_notification(email_subject, msg)
         except:
             ''' Ignore for now, re-notification will be sent '''
-            print "send_email error, re-notification failed... will re-notify later."
+            logmsg("send_email error, re-notification failed... will re-notify later.")
         
 def send_closed_notification():
     msg = "Garage doors now closed at " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
@@ -59,7 +69,7 @@ def send_closed_notification():
         send_email.send_email_notification("Garage Door Closed Notification.", msg)
     except:
         ''' Ignore for now. Closed notification failures not to be re-sent. '''
-        print "send_email error, door closed notification not sent. Will not retry."
+        logmsg("send_email error, door closed notification not sent. Will not retry.")
 
 def send_heartbeat():
     global last_heartbeat
@@ -72,15 +82,16 @@ def send_heartbeat():
         heartbeat_send_failures = 0
     except:
         ''' Ignore for now, re-notification will be sent '''
-        print "send_email error, heartbeat failed... will heartbeat later."
+        logmsg("send_email error, heartbeat failed... will heartbeat later.")
         heartbeat_freq_hours = heartbeat_reattempt_freq_hours
         heartbeat_send_failures = heartbeat_send_failures + 1
 
 def print_door_state():
     if door_state == OPEN:
-        print "%s Door Opened." % datetime.now()
+        msg = datetime.now().strftime("%-I:%M%P %B %d, %Y") + " Door Opened."
     else:
-        print "%s Door Closed." % datetime.now()
+        msg = datetime.now().strftime("%-I:%M%P %B %d, %Y") + " Door Closed."
+    logmsg(msg)
 
 def update_timestamp():
     global notification_sent
@@ -100,7 +111,9 @@ def update_timestamp():
         last_notification = notstamped
 
 if __name__ == '__main__':
+    global logger
     sys.path.append("/home/pi/gdc_settings")
+    logger = gdc_logging.create_rotating_log()
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(door1_switch_pin, GPIO.IN)
     GPIO.setup(door2_switch_pin, GPIO.IN)
@@ -125,10 +138,10 @@ if __name__ == '__main__':
                 send_heartbeat()
             time.sleep(poll_freq_secs)
     except KeyboardInterrupt:
-        print "Stopped by user."
+        logmsg("Stopped by user.")
 
     except:
-        print "Exiting, some exception occurred."
+        logmsg("Exiting, some exception occurred.")
 
     finally:
         GPIO.cleanup() # This ensures a clean exit.
