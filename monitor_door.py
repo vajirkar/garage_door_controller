@@ -43,8 +43,8 @@ def send_notification():
         msg = "Garage door open since " + door_open_since.strftime("%-I:%M%P %B %d, %Y") + "."
         msg = msg + " Time now " + datetime.now().strftime("%-I:%M%P %B %d, %Y") + "."
         try:
-            msg = "Sending notification ... " + datetime.now().strftime("%-I:%M%P %B %d, %Y")
-            logmsg(msg)
+            msg1 = "Sending notification ... " + datetime.now().strftime("%-I:%M%P %B %d, %Y")
+            logmsg(msg1)
             send_email.send_email_notification(email_subject, msg)
         except:
             ''' Ignore for now, re-notification will be sent '''
